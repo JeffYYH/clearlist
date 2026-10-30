@@ -1,0 +1,46 @@
+{% macro steps(active) %}
+<nav class="steps" aria-label="Preparation steps">
+  {% for name in ['Upload', 'Review & choose', 'Preview & download'] %}
+  <span class="step {% if loop.index == active %}current{% elif loop.index < active %}complete{% endif %}"><span class="step-number">0{{ loop.index }}</span>{{ name }}</span>
+  {% endfor %}
+</nav>
+{% endmacro %}
+
+{% macro value(text) %}
+{% if text == '' %}<span class="empty-value" aria-label="Empty cell">empty</span>{% elif is_missing(text) %}<span class="space-value" title="Whitespace only">{{ text|replace(' ', '·')|replace('\t', '⇥')|replace('\r', '␍')|replace('\n', '↵') }}</span>{% else %}<span class="cell-value">{{ text }}</span>{% endif %}
+{% endmacro %}
+
+{% macro literal(text) %}
+<code class="literal">{{ text|tojson }}</code>
+{% endmacro %}
+
+{% macro pagination(page, endpoint, anchor='', result_id=none, parameter='page', current_pages=none) %}
+<div class="pagination">
+  <span>{% if page.total %}{{ page.start }}–{{ page.end }} of {{ page.total }}{% else %}0 records{% endif %}</span>
+  {% if page.pages > 1 %}
+  <nav aria-label="{{ anchor or 'Table' }} pagination">
+    {% if result_id %}
+      {% set previous = dict(current_pages or {}, **{parameter: page.number - 1}) %}
+      {% set following = dict(current_pages or {}, **{parameter: page.number + 1}) %}
+      {% if page.number > 1 %}<a href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **previous) }}">← Previous</a>{% endif %}
+      <span>Page {{ page.number }} / {{ page.pages }}</span>
+      {% if page.number < page.pages %}<a href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **following) }}">Next →</a>{% endif %}
+    {% else %}
+      {% if page.number > 1 %}<a href="{{ url_for(endpoint, page=page.number-1, _anchor=anchor) }}">← Previous</a>{% endif %}
+      <span>Page {{ page.number }} / {{ page.pages }}</span>
+      {% if page.number < page.pages %}<a href="{{ url_for(endpoint, page=page.number+1, _anchor=anchor) }}">Next →</a>{% endif %}
+    {% endif %}
+  </nav>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% macro warning(report) %}
+{% if report.formula_cells or report.formula_headers %}
+<aside class="notice warning"><strong>Check before opening in a spreadsheet.</strong> {{ report.formula_cells }} data cell(s) and {{ report.formula_headers }} header(s) have potential formula prefixes. Values are preserved for import, including “+” phone numbers. CSV quoting does not neutralize formulas.</aside>
+{% endif %}
+{% endmacro %}
+
+{% macro reset_form() %}
+<form method="post" action="{{ url_for('web.reset') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button quiet" type="submit">Reset workspace</button></form>
+{% endmacro %}

@@ -1,0 +1,5 @@
+{% extends 'base.html' %}
+{% block title %}Check your upload · Clearlist{% endblock %}
+{% block content %}
+<section class="error-page"><p class="eyebrow">Let's get this back on track</p><h1>One thing to check.</h1><div role="alert" class="notice error">{{ message }}</div><p>Your original file has not been changed.</p><div class="bottom-actions"><a href="{{ url_for('web.index') }}" class="button primary">Back to upload →</a><a href="{{ url_for('web.configure') }}">Review current workspace</a></div></section>
+{% endblock %}

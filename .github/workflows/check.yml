@@ -1,0 +1,26 @@
+name: Check
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build test image
+        run: docker build --target test -t csv-cleaner-test .
+      - name: Check formatting, lint, and behavior
+        run: docker run --rm csv-cleaner-test
+      - name: Build runtime image
+        run: docker build -t csv-cleaner .
+      - name: Smoke check runtime
+        run: |
+          docker run -d --name csv-cleaner --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m -p 127.0.0.1:8000:8000 csv-cleaner
+          trap 'docker logs csv-cleaner; docker rm -f csv-cleaner' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8000/healthz; then exit 0; fi
+            sleep 1
+          done
+          exit 1

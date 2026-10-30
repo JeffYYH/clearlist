@@ -1,0 +1,12 @@
+customer_id,name,email,phone,city,notes
+0001,  Alex Chan  , alex.chan@example.com ,+852 5555 0101,Hong Kong,"Requested, email only"
+0002,陳美玲,mei.ling@example.com,00123456,  Kowloon  ,
+0001,  Alex Chan  , alex.chan@example.com ,+852 5555 0101,Hong Kong,"Requested, email only"
+,,,,,
+0003,Sam Lee,,+852 5555 0103,,NA
+0004,Morgan Wong,morgan@example.com,00098765,NULL,"Said ""hello"""
+0002,陳美玲,mei.ling@example.com,00123456,Kowloon,
+0005,Taylor Ho,taylor@example.com,0,Hong Kong,"Follow up
+next week"
+0006,Jamie Lam,jamie@example.com,,Hong Kong,   
+ , , , , , 

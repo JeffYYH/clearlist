@@ -1,0 +1,3 @@
+# Whitespace is deliberately part of the fictional CSV examples. Preserve their bytes.
+samples/*.csv -text -whitespace
+src/csv_cleaner/data/*.csv -text -whitespace
