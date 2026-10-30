@@ -12,14 +12,14 @@ This is a factual development record, not a claim of independent user authorship
 
 ## Tools actually used
 
-Codex for planning and code generation; terminal tools for Python, pytest, Ruff, Docker, and Git; browser tools for UI inspection, uploads/downloads, and desktop/mobile screenshots; official Python/Flask/Flask-WTF/Docker documentation and OWASP guidance consulted through web tools. Exact model identifier was not recorded.
+Codex for planning and code generation; terminal tools for Python, pytest, Ruff, Docker, and Git; browser tools for UI inspection, uploads/downloads, and desktop/mobile screenshots; GitHub tools/API for private repository creation and CI verification; official Python/Flask/Flask-WTF/Docker documentation and OWASP guidance consulted through web tools. Exact model identifier was not recorded.
 
 ## Session log
 
 | Session / goal | Direction and evaluation | Approximate time | Observed result |
 |---|---|---|---|
 | Planning | Inspect the supplied brief and empty workspace; compare UI approaches; ask about scope and data semantics; define testable preservation/download guarantees. | Not measured | Plan reviewed and implementation requested. No implementation files existed before that request. |
-| Implementation, started 2026-10-31 04:19 HKT | Implement engine, Flask pages, session-bound downloads, Docker packaging, fictional sample, and focused tests. | Elapsed time recorded below at completion; human active time not measured | First local run: 69 passed, 1 failed because an assertion incorrectly expected literal quotes to be HTML-escaped. Corrected that assertion: 70 passed. Code review found a literal-BOM-in-header preservation case; fixed it and added a regression test: 71 passed. |
+| Core implementation and verification, 2026-10-31 04:19–04:51 HKT | Implement engine, Flask pages, session-bound downloads, Docker packaging, fictional sample, focused tests, and initial publication. | About 31 minutes observed elapsed time, including tool/download/authentication waiting; human active time not measured. Final documentation follow-up not timed separately. | First local run: 69 passed, 1 failed because an assertion incorrectly expected literal quotes to be HTML-escaped. Corrected that assertion: 70 passed. Code review found a literal-BOM-in-header preservation case; fixed it and added a regression test: 71 passed. |
 | Container and browser verification | Check the actual deployment settings and the administrator's workflow. | Part of the implementation session | First read-only Docker test failed because Ruff tried to cache inside `/app`. Moved its cache to `/tmp` and reran successfully. Browser upload/report/cleaning and both downloads checked. Desktop (1280 px) and mobile (390 px) screenshots inspected; mobile document width matched the viewport. |
 
 ## Verification record
@@ -31,12 +31,14 @@ Codex for planning and code generation; terminal tools for Python, pytest, Ruff,
 - Runtime container: healthy, UID/GID `10001:10001`, read-only filesystem with memory-backed `/tmp`.
 - Browser sample: 10 original records, 18 missing cells, 2 empty rows, 1 original duplicate extra; selected operations produced 6 records, 5 trims, 1 fill, 2 empty removals, 2 duplicate removals, and 4 missing cells remaining.
 - Both files were actually downloaded through the browser. Independently read the saved files and verified six records, preserved leading zeros/Chinese text/embedded newline, matching result ID, and matching CSV SHA-256.
-- Clean-checkout rehearsal and remote CI: recorded below after completion. The candidate chose a new private GitHub repository; reviewer access still needs to be arranged.
+- Clean-checkout rehearsal: cloned the committed repository into a fresh temporary directory; built and ran the documented test target read-only (**71 passed in 0.59s**, Ruff checks passed), then built the runtime image from that checkout. The final runtime is Python **3.12.16** and passed its container health check.
+- Published [JeffYYH/clearlist](https://github.com/JeffYYH/clearlist) as **private**, as selected by the candidate. No reviewer invitations were sent because no reviewer accounts were supplied.
+- Observed [GitHub Check run 41126340381](https://github.com/JeffYYH/clearlist/actions/runs/41126340381) complete successfully for implementation commit `27c32c2`. That workflow builds the Docker test/runtime images, runs lint/format/tests, and starts the read-only runtime for an HTTP health smoke check. A subsequent documentation commit does not change the verified application source.
 
 ## Candidate review before submission
 
 - Follow the README walkthrough yourself and inspect both downloads.
 - Review the code and explain the choices in your own words, especially preservation, transformation order, formula warnings, and session limitations.
 - Add your own actual active-time estimate; do not present the agent's elapsed time as your human effort.
-- Decide repository visibility and ensure reviewers have access. Repository publication/access has not yet been verified.
+- Grant reviewers access to the private repository and verify they can clone it. Owner access and private visibility were verified; reviewer access is not yet configured.
 - Report remote CI as passed only after observing a completed run.

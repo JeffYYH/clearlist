@@ -86,7 +86,7 @@ docker build --target test -t csv-cleaner-test .
 docker run --rm --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m csv-cleaner-test
 ```
 
-This runs Ruff checks and pytest. Tests use independently specified expected values and cover transformations, preservation, malformed input, output expansion, snapshot/download identity, session ownership, expiry/reset/replacement, pagination, form protection, and escaped HTML. The GitHub workflow runs those checks and a runtime health smoke test; its presence is not a claim that a remote run has passed.
+This runs Ruff checks and pytest. Tests use independently specified expected values and cover transformations, preservation, malformed input, output expansion, snapshot/download identity, session ownership, expiry/reset/replacement, pagination, form protection, and escaped HTML. The GitHub workflow runs those checks and a runtime health smoke test. The [initial implementation check passed](https://github.com/JeffYYH/clearlist/actions/runs/41126340381); check the Actions page for subsequent runs.
 
 For a running container, `GET /healthz` should return `{"status":"ok"}`. Follow the sample walkthrough above to inspect the actual browser layout and downloaded files. Automated checks do not replace that visual review.
 
