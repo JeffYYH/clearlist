@@ -4,6 +4,8 @@ import io
 import json
 
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from csv_cleaner.engine import (
     MAX_CELL_CHARS,
@@ -47,6 +49,45 @@ def output_boundary_case():
         replacements = tuple((index, "x" * length) for index, length in enumerate(lengths))
         return parse_csv(source), CleaningOptions(replacements=replacements)
     raise AssertionError("could not construct an exact output-limit dataset")
+
+
+@st.composite
+def bounded_csv_tables(draw):
+    column_count = draw(st.integers(min_value=1, max_value=4))
+    row_count = draw(st.integers(min_value=0, max_value=6))
+    cell = st.one_of(
+        st.sampled_from(
+            (
+                "",
+                " ",
+                "\t",
+                "comma,value",
+                'say "quoted"',
+                "line one\nline two",
+                "普通話🙂",
+            )
+        ),
+        st.text(
+            alphabet=st.sampled_from(("a", "Z", "0", " ", "\t", ",", '"', "\n", "é", "中", "🙂")),
+            max_size=12,
+        ),
+    )
+    values = draw(
+        st.lists(cell, min_size=column_count * row_count, max_size=column_count * row_count)
+    )
+    headers = tuple(f"column_{index}" for index in range(column_count))
+    rows = tuple(
+        tuple(values[offset : offset + column_count])
+        for offset in range(0, len(values), column_count)
+    )
+    line_ending = draw(st.sampled_from(("\n", "\r\n")))
+    buffer = io.StringIO(newline="")
+    writer = csv.writer(buffer, lineterminator=line_ending)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    content = buffer.getvalue().encode("utf-8")
+    assert len(content) <= MAX_INPUT_BYTES
+    return content, headers, rows
 
 
 def test_sample_has_independently_counted_issues(sample_bytes):
@@ -119,6 +160,23 @@ def test_no_op_cleaning_round_trips_headers_values_and_order():
     assert result.dataset.headers == source.headers
     assert result.dataset.rows == source.rows
     assert result.source_rows == (1, 2)
+
+
+@given(bounded_csv_tables())
+@settings(max_examples=75, deadline=None, database=None)
+def test_property_no_op_csv_tables_round_trip(table):
+    content, expected_headers, expected_rows = table
+    source = parse_csv(content)
+    result = clean(source, CleaningOptions())
+    reparsed = parse_csv(result.csv_bytes, generated=True)
+
+    assert len(result.csv_bytes) <= MAX_OUTPUT_BYTES
+    assert source.headers == expected_headers
+    assert source.rows == expected_rows
+    assert result.dataset.headers == expected_headers
+    assert result.dataset.rows == expected_rows
+    assert reparsed.headers == expected_headers
+    assert reparsed.rows == expected_rows
 
 
 def test_utf8_bom_and_non_ascii_values_are_preserved():
