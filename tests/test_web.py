@@ -5,7 +5,8 @@ import re
 
 import pytest
 
-from csv_cleaner.engine import MAX_INPUT_BYTES
+from csv_cleaner import web
+from csv_cleaner.engine import MAX_INPUT_BYTES, parse_csv
 
 
 def token(response):
@@ -77,6 +78,34 @@ def test_old_preview_invalidated_by_new_preview(client):
     assert client.get(f"/preview/{old}").status_code == 410
     assert client.get(f"/download/{old}/cleaned.csv").status_code == 410
     assert b"001,Alex\r\n" in client.get(f"/download/{latest}/cleaned.csv").data
+
+
+def test_preview_uses_one_job_snapshot_when_session_is_replaced(client, app, monkeypatch):
+    upload(client, b"id,name\n1,old one\n2,old two\n")
+    identity = result_id(preview(client))
+    with client.session_transaction() as cookie:
+        key = cookie["job_id"]
+
+    jobs = app.extensions["jobs"]
+    replacement = parse_csv(b"id,name\nnew,MIXED_SENTINEL_42\n")
+    original_current_job = web.current_job
+    calls = 0
+
+    def replace_after_first_lookup():
+        nonlocal calls
+        calls += 1
+        job = original_current_job()
+        if calls == 1:
+            jobs.put(key, replacement)
+        return job
+
+    monkeypatch.setattr(web, "current_job", replace_after_first_lookup)
+    response = client.get(f"/preview/{identity}")
+
+    assert response.status_code == 200
+    assert calls == 1
+    assert b"old one" in response.data and b"old two" in response.data
+    assert b"MIXED_SENTINEL_42" not in response.data
 
 
 def test_download_never_recomputes_cleaning(client, monkeypatch):

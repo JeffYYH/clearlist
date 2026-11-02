@@ -214,15 +214,25 @@ def owned_result(result_id):
     return job.result
 
 
+def owned_snapshot(result_id):
+    job = current_job()
+    if job is None:
+        return None
+    result = job.result
+    if result is None or result.result_id != result_id:
+        return None
+    return job, result
+
+
 @bp.get("/preview/<result_id>")
 def preview(result_id):
-    result = owned_result(result_id)
-    if result is None:
+    snapshot = owned_snapshot(result_id)
+    if snapshot is None:
         return problem(
             "This preview is unavailable or was replaced. Generate a new preview from your current upload.",
             410,
         )
-    job = current_job()
+    job, result = snapshot
     records = tuple(zip(result.source_rows, result.dataset.rows, strict=True))
     return render_template(
         "preview.html",
