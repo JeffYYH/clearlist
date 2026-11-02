@@ -1,95 +1,146 @@
-# Clearlist
+# ClearList
 
-A small Python application for small-business administrators preparing customer CSVs for a system import. Inspect missing values and exact duplicates, choose corrections, review the proposed changes, then download the exact CSV you previewed.
+ClearList is a small Python/Flask utility for business administrators who need to prepare a customer CSV before importing it into another system. It shows the original file first, lets the administrator choose a small set of deterministic cleaning operations, and presents the exact saved result before download.
 
-Built as a focused software engineering work sample. All bundled customer records are fictional. AI assisted development; the running application does not use AI, send CSVs to external services, or need API keys.
+The product is deliberately local-first and reviewable:
 
-![The sample's reviewed result: six retained records, four removed rows, and matching CSV/summary downloads.](docs/screenshots/preview-desktop.jpg)
+- The original CSV stays intact in the session workspace.
+- Cleaning is explicit: no inferred corrections, fuzzy matching, or hidden normalization.
+- The preview is built from the saved output bytes that the download route serves.
+- The browser workflow is Upload → Configure → Review & download.
+- Bundled records are fictional. The running application does not call an LLM or send CSV content to an external service.
+
+## Intended user and problem
+
+A small-business administrator often receives a customer export with surrounding whitespace, blank rows, missing optional values, or exact duplicate records. They need a safe way to make bounded corrections without losing leading zeros, Unicode, embedded newlines, or an audit-friendly explanation of what changed.
+
+ClearList addresses that narrow problem with a temporary browser session, a visible original table, deterministic operations, a change log, removed-row reasons, and downloads tied to the reviewed result ID.
 
 ## Run with Docker
 
-Prerequisite: a running Docker installation. The initial build downloads the base image and dependencies.
+The supported runtime target is Linux through Docker. The image uses the pinned Python 3.12 base image, installs exact runtime dependencies, runs as UID/GID \`10001:10001\`, and keeps temporary request files in memory.
 
-```sh
+\`\`\`sh
 docker build -t csv-cleaner .
 docker run --rm --read-only -p 127.0.0.1:8000:8000 \
   --tmpfs /tmp:rw,noexec,nosuid,size=64m csv-cleaner
-```
+\`\`\`
 
-Open [http://localhost:8000](http://localhost:8000). Stop with Ctrl+C. No volumes or configuration are required. Port 8000 is published only to your computer; change the left-hand port if it is already in use.
+Open [http://localhost:8000](http://localhost:8000). Stop with Ctrl+C.
 
-The application has four optional operations, all off for a new upload:
+The test image runs the same checks used by CI:
+
+\`\`\`sh
+docker build --target test -t csv-cleaner-test .
+docker run --rm --read-only \
+  --tmpfs /tmp:rw,noexec,nosuid,size=64m csv-cleaner-test
+\`\`\`
+
+The current test stage runs Ruff lint, Ruff format verification, and pytest. It does not require a database, API key, volume, or external service.
+
+For a local Python environment, the equivalent commands are:
+
+\`\`\`sh
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.lock
+.venv/bin/ruff check src tests
+.venv/bin/ruff format --check src tests
+.venv/bin/python -m pytest -q -p no:cacheprovider
+\`\`\`
+
+## Product workflow
+
+### 1. Upload
+
+Choose one UTF-8 comma-separated CSV with a header row. The fictional sample is available at [samples/fictional_customers.csv](samples/fictional_customers.csv).
+
+### 2. Configure
+
+ClearList reports records, columns, missing cells, fully empty rows, and exact duplicate extras. The original table remains visible while the administrator chooses:
 
 1. Remove fully empty rows.
 2. Trim surrounding whitespace in selected columns.
-3. Fill missing cells in selected columns with your own text.
-4. Remove exact duplicate rows, retaining the first occurrence after the preceding operations.
+3. Fill missing cells in selected columns with administrator-provided text.
+4. Remove exact duplicates after the selected transformations, retaining the first occurrence.
 
-The order is fixed. Empty rows are removed before replacements so they cannot become artificial customer records. Missing means `value.strip() == ""`; literal `NA`, `NULL`, and `0` are ordinary values. Matching is case-sensitive across every column. There is no fuzzy matching, type inference, or automatic phone/email normalization.
+All options start off. The fixed order is empty-row removal → trim → fill → duplicate removal.
 
-## Try the fictional example
+### 3. Review and download
 
-Download the sample from the home page or use [samples/fictional_customers.csv](samples/fictional_customers.csv).
+The preview shows:
 
-1. Upload it. The report should show **10 records, 6 columns, 18 missing cells, 2 fully empty rows, and 1 duplicate extra**.
-2. Select both row-removal options. Select trim for `name`, `email`, and `city`.
-3. Select fill missing for `city` and enter `Unknown`.
-4. Preview. Expect **6 records**, **2 empty rows removed**, **2 duplicate rows removed**, **5 trims**, **1 fill**, and **4 remaining missing cells**.
-5. Inspect the before/after cells and removed source numbers. The retained sources are **1, 2, 5, 6, 8, 9**. Notice that leading zeros, Chinese names, `NULL`, `NA`, a quoted comma, and an embedded newline survive.
-6. Download `cleaned.csv` and `summary.json`. Both belong to the displayed result ID. The summary includes the CSV's SHA-256 for an independent file check.
+- retained records and operation counts;
+- original versus proposed values with explicit Before/After labels;
+- missing-value counts before and after;
+- removed source rows and reasons;
+- formula-like warnings for spreadsheet review;
+- the saved result ID;
+- primary \`cleaned.csv\` and secondary \`summary.json\` downloads.
 
-Some fictional phone numbers start with `+`, so a conservative spreadsheet-formula warning is expected. Missing optional values remain unresolved: this tool prepares a file for further import checks, rather than certifying compatibility with an unspecified destination.
+A replaced upload, new preview, reset, expiry, or process restart invalidates older result links.
 
-## Data contract and limitations
+## Fictional sample walkthrough
 
-- One comma-separated UTF-8 `.csv`, optionally with a UTF-8 BOM and LF or CRLF record separators; the first record must contain unique, nonblank headers.
-- Maximum **2 MiB input, 10,000 data records, 50 columns**, **100,000 characters per cell/header**, **200 characters per replacement**, and **10 MiB output**. Request/form limits also apply.
-- Quoted commas, doubled quotes, embedded newlines, Unicode, header-only files, and blank records are supported. Blank records become fully empty records; they are not silently discarded.
-- Invalid encoding, quoting, NULs, duplicate/blank headers, and inconsistent row widths are rejected. No guessing of delimiter or encoding. A one-column file is valid, so an unsupported delimiter cannot always be distinguished from ordinary text; inspect the column preview.
-- All values remain strings. Headers, retained-record order, and column order are preserved. No generated index is exported. Source numbers refer to data records, not physical file lines.
-- Output uses UTF-8 without an added BOM, comma separation, standard quoting, and CRLF record separators. Embedded newline values are retained. Formatting need not be byte-identical to the original.
-- The original bytes/table are immutable. Changing options always starts from the original, never from a previously cleaned result.
-- Preview data is parsed from the saved CSV bytes. Downloads serve the saved bytes, without rerunning cleaning. A new preview, replacement upload, reset, expiry, or restart invalidates old links instead of silently returning another result.
-- Cell-operation counts describe sequential effects, including changes to rows subsequently removed. They are not counts of unique final cells changed.
-- Excel files, batch processing, destination schemas, inferred corrections, persistent histories, accounts, and hosted/multi-worker deployment are deliberately deferred.
+Use [samples/fictional_customers.csv](samples/fictional_customers.csv).
 
-### Privacy and spreadsheet precautions
+1. Upload it. The original report is **10 records, 6 columns, 18 missing cells, 2 fully empty rows, and 1 duplicate extra**.
+2. Enable **Remove fully empty rows** and **Remove exact duplicates**.
+3. Enable trim for \`name\`, \`email\`, and \`city\`.
+4. Enable fill for \`city\` and enter \`Unknown\`.
+5. Preview. The expected result is **6 retained records**, **2 empty rows removed**, **2 duplicate rows removed**, **5 trims**, **1 fill**, and **4 missing cells remaining**.
+6. Inspect the output table, change log, removed-row sources, and before/after missing counts.
+7. Download both files. The CSV and summary carry the same result identity; the summary records the CSV SHA-256.
 
-Data lives in a bounded, server-side memory store, separate for each browser session. The local deployment supports four active sessions and a 30-minute idle expiry. Expired entries are pruned on requests; a reset, replacement upload, or process restart clears associated state. Closing a tab alone does not immediately clear it. Cookies contain only random session/form identifiers, not customer rows. The Docker command places temporary request files in memory and makes the remaining filesystem read-only. No customer contents are logged by the application.
+The saved screenshots in [docs/screenshots/](docs/screenshots/) are actual Flask/Jinja renders of this fictional sample, not design mockups:
 
-Potential formula prefixes are flagged in headers and data, including replacement values. Values are **preserved**, including `+` phone numbers; quoting is not formula neutralization. Opening untrusted CSVs in spreadsheet software may interpret them as formulas. This export prioritizes import-value preservation, and does not claim a universally safe spreadsheet export. See [OWASP's explanation](https://owasp.org/www-community/attacks/CSV_Injection).
+- [Desktop preview](docs/screenshots/preview-desktop.jpg) — 1280×900.
+- [Mobile preview](docs/screenshots/preview-mobile.jpg) — 500×900. The local headless Chrome used for capture clamps below-500px requests to a 500px CSS viewport; the narrow browser workflow was also inspected separately.
 
-## Design
+## Data contract and limits
 
-```mermaid
-flowchart LR
-    A[Browser: upload and choices] --> B[Flask routes and validation]
-    B --> C[Python CSV engine]
-    C --> D[Immutable result snapshot]
-    D --> E[HTML preview and comparison]
-    D --> F[CSV and JSON downloads]
-    B <--> G[Bounded in-memory session store]
-```
+- UTF-8 CSV, optionally with a UTF-8 BOM; LF and CRLF record separators are accepted.
+- Unique, nonblank headers; comma delimiter; all values remain strings.
+- Maximum **2 MiB input**, **10,000 data records**, **50 columns**, **100,000 characters per cell/header**, **200 characters per replacement**, and **10 MiB generated output**.
+- Quoted commas, doubled quotes, embedded newlines, Unicode, header-only files, and blank physical records are supported.
+- Invalid encoding, NUL characters, malformed or overly strict quotes, duplicate/blank headers, inconsistent row widths, and over-limit fields are rejected.
+- Output is UTF-8 without an added BOM, comma-separated, standard quoted, and CRLF-terminated. It is parsed again before the result snapshot is stored.
+- Missing means \`value.strip() == ""\`; \`NA\`, \`NULL\`, \`0\`, and other literal tokens are ordinary values.
+- Duplicate matching is case-sensitive and uses every column after the selected operations.
+- Data lives in a bounded process-local session store with four active sessions and a 30-minute idle expiry. Closing a tab does not immediately clear it.
+- The intentional deployment limitation is one Gunicorn worker. Multi-worker hosting would require shared session storage and a different lifecycle design.
 
-- **Flask + Jinja + local CSS:** conventional form requests and server-rendered pages; no JavaScript framework or external assets.
-- **Standard-library CSV engine:** explicit string handling avoids unintended identifier or missing-token conversion; transformations are independently testable.
-- **Snapshot storage:** one upload and latest result per session. Downloads require the owning session and result ID. No-store response headers, template escaping, form protection, and fixed attachment names protect the workflow.
-- **One Gunicorn worker:** intentional because state is process-local. Scaling to multiple workers would require shared storage and a different lifecycle design. Restarting invalidates sessions; this is acceptable for a temporary local work sample.
-- **Docker:** pinned Python 3.12 image digest, exact runtime/test dependency versions, non-root user, a health check, and separate test/runtime build targets.
+Potential spreadsheet formula prefixes are flagged but preserved, including \`+\` phone numbers. CSV quoting does not neutralize formulas; see [OWASP's CSV injection explanation](https://owasp.org/www-community/attacks/CSV_Injection).
 
-The main code is in `src/csv_cleaner`: `engine.py` handles parsing/reporting/cleaning, `web.py` handles the browser workflow, and `state.py` owns temporary state. There is no database or separately supported REST API.
+## Architecture
 
-## Verify
+\`\`\`mermaid
+flowchart TD
+    Browser[Browser] --> Web[Flask blueprint<br/>web.py]
+    Web --> CSRF[Flask-WTF CSRF<br/>security headers]
+    Web --> Engine[CSV engine<br/>engine.py]
+    Web <--> Store[SessionStore<br/>state.py]
+    Engine --> Snapshot[PreviewResult<br/>saved output snapshot]
+    Store --> Snapshot
+    Snapshot --> Templates[Jinja templates<br/>HTML preview]
+    Snapshot --> Downloads[send_file<br/>cleaned.csv / summary.json]
+\`\`\`
 
-```sh
-docker build --target test -t csv-cleaner-test .
-docker run --rm --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m csv-cleaner-test
-```
+- \`engine.py\` parses CSV data, reports quality issues, applies the four operations, serializes output, and re-parses generated bytes.
+- \`web.py\` owns the upload/configure/preview/download workflow, form validation, pagination, CSRF, response headers, and result ownership checks.
+- \`state.py\` stores one immutable dataset and latest result per session key in a bounded process-local \`SessionStore\`.
+- Templates are server-rendered HTML; CSS is served locally. There is no JavaScript framework, client-side CSV parser, database, or runtime AI service.
 
-This runs Ruff checks and pytest. Tests use independently specified expected values and cover transformations, preservation, malformed input, output expansion, snapshot/download identity, session ownership, expiry/reset/replacement, pagination, form protection, and escaped HTML. The GitHub workflow runs those checks and a runtime health smoke test. The [initial implementation check passed](https://github.com/JeffYYH/clearlist/actions/runs/41126340381); check the Actions page for subsequent runs.
+## Verification
 
-For a running container, `GET /healthz` should return `{"status":"ok"}`. Follow the sample walkthrough above to inspect the actual browser layout and downloaded files. Automated checks do not replace that visual review.
+The current local verification baseline is:
 
-Desktop and [mobile](docs/screenshots/preview-mobile.jpg) review screenshots are included. The latest observed local verification completed **71 tests**, Ruff checks, a healthy non-root container with a read-only filesystem, and the browser sample workflow. Downloaded CSV and summary hashes/identities were also checked.
+- **83 pytest tests passed**.
+- Ruff lint passed.
+- Ruff format check passed.
+- \`git diff --check\` passed.
+- Browser workflow checked with the fictional sample, including desktop and narrow preview renders, changed cells, removed rows, warnings, downloads, keyboard focus progression, and table-region overflow behavior.
+- The GitHub Actions workflow at [.github/workflows/check.yml](.github/workflows/check.yml) builds the test image, runs the test stage, builds the runtime image, and smoke-checks \`/healthz\`.
 
-See [the AI-assisted workflow record](docs/ai-workflow.md) for decisions, observed checks, time accounting, and remaining submission steps.
+The documented Docker commands are the CI commands. A Docker daemon was unavailable during the latest local documentation pass, so no new local Docker run is claimed here.
+
+See [docs/ai-workflow.md](docs/ai-workflow.md) for the preserved development record, AI decisions, concurrency fix, test expansion, UI redesign, time accounting, and submission gaps.

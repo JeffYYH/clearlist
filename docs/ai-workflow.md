@@ -1,6 +1,6 @@
 # AI-assisted workflow
 
-This is a factual development record, not a claim of independent user authorship. AI generated implementation and tests under the candidate's direction. Times below distinguish observed session elapsed time from human active effort, which has not been measured.
+This is a factual development record, not a claim of independent user authorship. AI generated implementation and tests under the candidate's direction. Historical entries distinguish observed session elapsed time from human effort; the candidate later supplied a separate active-time estimate below.
 
 ## Direction and decisions
 
@@ -12,14 +12,14 @@ This is a factual development record, not a claim of independent user authorship
 
 ## Tools actually used
 
-Codex for planning and code generation; terminal tools for Python, pytest, Ruff, Docker, and Git; browser tools for UI inspection, uploads/downloads, and desktop/mobile screenshots; GitHub tools/API for private repository creation and CI verification; official Python/Flask/Flask-WTF/Docker documentation and OWASP guidance consulted through web tools. Exact model identifier was not recorded.
+Codex for planning and code generation; terminal tools for Python, pytest, Ruff, Docker, and Git; browser tools for UI inspection, uploads/downloads, and desktop/mobile screenshots; GitHub tools/API for repository metadata and CI verification; official Python/Flask/Flask-WTF/Docker documentation and OWASP guidance consulted through web tools. Exact model identifier was not recorded.
 
 ## Session log
 
 | Session / goal | Direction and evaluation | Approximate time | Observed result |
 |---|---|---|---|
 | Planning | Inspect the supplied brief and empty workspace; compare UI approaches; ask about scope and data semantics; define testable preservation/download guarantees. | Not measured | Plan reviewed and implementation requested. No implementation files existed before that request. |
-| Core implementation and verification, 2026-10-31 04:19–04:51 HKT | Implement engine, Flask pages, session-bound downloads, Docker packaging, fictional sample, focused tests, and initial publication. | About 31 minutes observed elapsed time, including tool/download/authentication waiting; human active time not measured. Final documentation follow-up not timed separately. | First local run: 69 passed, 1 failed because an assertion incorrectly expected literal quotes to be HTML-escaped. Corrected that assertion: 70 passed. Code review found a literal-BOM-in-header preservation case; fixed it and added a regression test: 71 passed. |
+| Core implementation and verification, 2026-10-31 04:19–04:51 HKT | Implement engine, Flask pages, session-bound downloads, Docker packaging, fictional sample, focused tests, and initial publication. | About 31 minutes observed elapsed time, including tool/download/authentication waiting; candidate active effort was not available at that time. Final documentation follow-up not timed separately. | First local run: 69 passed, 1 failed because an assertion incorrectly expected literal quotes to be HTML-escaped. Corrected that assertion: 70 passed. Code review found a literal-BOM-in-header preservation case; fixed it and added a regression test: 71 passed. |
 | Container and browser verification | Check the actual deployment settings and the administrator's workflow. | Part of the implementation session | First read-only Docker test failed because Ruff tried to cache inside `/app`. Moved its cache to `/tmp` and reran successfully. Browser upload/report/cleaning and both downloads checked. Desktop (1280 px) and mobile (390 px) screenshots inspected; mobile document width matched the viewport. |
 
 ## Verification record
@@ -32,13 +32,63 @@ Codex for planning and code generation; terminal tools for Python, pytest, Ruff,
 - Browser sample: 10 original records, 18 missing cells, 2 empty rows, 1 original duplicate extra; selected operations produced 6 records, 5 trims, 1 fill, 2 empty removals, 2 duplicate removals, and 4 missing cells remaining.
 - Both files were actually downloaded through the browser. Independently read the saved files and verified six records, preserved leading zeros/Chinese text/embedded newline, matching result ID, and matching CSV SHA-256.
 - Clean-checkout rehearsal: cloned the committed repository into a fresh temporary directory; built and ran the documented test target read-only (**71 passed in 0.59s**, Ruff checks passed), then built the runtime image from that checkout. The final runtime is Python **3.12.16** and passed its container health check.
-- Published [JeffYYH/clearlist](https://github.com/JeffYYH/clearlist) as **private**, as selected by the candidate. No reviewer invitations were sent because no reviewer accounts were supplied.
+- Published [JeffYYH/clearlist](https://github.com/JeffYYH/clearlist). An earlier record described the repository as **private**; the candidate later clarified that the work-sample repository should be publicly accessible. No reviewer invitations were sent because no reviewer accounts were supplied.
 - Observed [GitHub Check run 41126340381](https://github.com/JeffYYH/clearlist/actions/runs/41126340381) complete successfully for implementation commit `27c32c2`. That workflow builds the Docker test/runtime images, runs lint/format/tests, and starts the read-only runtime for an HTTP health smoke check. A subsequent documentation commit does not change the verified application source.
 
 ## Candidate review before submission
 
 - Follow the README walkthrough yourself and inspect both downloads.
 - Review the code and explain the choices in your own words, especially preservation, transformation order, formula warnings, and session limitations.
-- Add your own actual active-time estimate; do not present the agent's elapsed time as your human effort.
-- Grant reviewers access to the private repository and verify they can clone it. Owner access and private visibility were verified; reviewer access is not yet configured.
+- Use the candidate-provided active-time estimate below; do not present agent elapsed time as human effort.
+- Make the repository publicly accessible before submission, or grant the named reviewers access and verify they can clone it. The current GitHub visibility remains private and reviewer identities/access are not supplied.
 - Report remote CI as passed only after observing a completed run.
+
+## Subsequent implementation record
+
+The earlier record above is preserved. The following entries extend it with the later defect fix, test expansion, and visual redesign work.
+
+### Preview concurrency defect and resolution
+
+- The candidate asked for a race-condition investigation after identifying that the preview route read the session job twice. A replacement upload between those reads could pair an old result's source indexes with a new dataset and trigger a Jinja `UndefinedError`.
+- The fix introduced one owned `(job, result)` snapshot for the complete preview render. Session ownership, stale-result handling, pagination, and download result IDs stayed unchanged.
+- A deterministic regression test replaces the session job after the first lookup and asserts that the render uses one lookup and remains internally consistent. The same test was run against the original `HEAD` in a temporary worktree and reproduced the original template failure.
+- Commit: `cdf16db` (`fix: ensure consistent preview rendering under concurrent replacement`).
+
+### Boundary and property-based test expansion
+
+- Part A added exact and just-over input/output limits, maximum rows/columns/cell lengths, BOM and Unicode preservation, quote policy, line-ending coverage, no-op round trips, and output re-parsing checks.
+- Part B added a pinned development-only Hypothesis dependency with bounded tables, 75 examples, no persistent example database, and no runtime dependency change.
+- Commits: `a19f2b8` (`test: strengthen CSV boundary and preservation coverage`) and `5dced3e` (`test: add property-based CSV round-trip checks`).
+
+### UI direction and implementation
+
+- The candidate approved the Refined Editorial SaaS / File Spine direction after reviewing three options. The implementation uses local Flask/Jinja/CSS only, a paper/ink/forest/oxide token system, a semantic three-step workflow, a deliberate upload panel, ruled fact strips, table-region scrolling, visible focus states, and explicit Before/After values.
+- The first visual redesign commit covered shared shell, Home, Configure, Preview, Error, and responsive styling: `d5e9002` (`feat: redesign ClearList editorial interface`).
+- Upload/configuration responsive and focus refinements followed in `5a8d9cc` (`style: redesign upload and configuration experience`). Preview comparison, download hierarchy, empty states, removed-row reasons, pagination controls, keyboard-scrollable literals, error recovery copy, and focused template assertions followed in `c24fe25` (`style: refine preview comparison and accessibility`).
+
+## Current verification record
+
+- Current local baseline after the UI and documentation work: **83 pytest tests passed**, Ruff lint passed, Ruff format check passed, and `git diff --check` passed.
+- The focused template test checks Before/After labels, primary/secondary download links, removed-row reasons, table column scopes, and error recovery copy.
+- Actual browser inspection used the packaged fictional sample only. Desktop and narrow Preview screenshots were captured from Flask/Jinja output with the local stylesheet; the screenshot files in `docs/screenshots/` are not mockups. Browser checks covered changed cells, removed rows, warnings, downloads, keyboard focus progression, narrow table regions, and 500/768/1280/1440 layout width measurements.
+- A Docker daemon was unavailable during the latest documentation pass. The Docker commands and workflow remain documented and unchanged; no new Docker result is claimed here.
+
+## Candidate-provided active-time estimate
+
+The candidate supplied this estimate; it is not inferred from agent elapsed time:
+
+- Thinking through the topic: **30 minutes**.
+- Discussing possibilities with AI: **20 minutes**.
+- Writing prompts: **15 minutes**.
+- Reviewing outputs: **1 hour**.
+- Modification and testing: **1.5 hours**.
+- Total candidate active-time estimate: **3 hours 35 minutes**.
+
+Agent/tool elapsed time is kept separate. The historical session table contains observed elapsed intervals for earlier sessions, but no normalized aggregate agent-time figure is claimed for the full project.
+
+## Submission details still requiring candidate action
+
+- The work-submission brief requires a repository accessible to reviewers. The candidate clarified that it should be public.
+- A GitHub repository metadata check on 2026-11-03 reported `JeffYYH/clearlist` visibility as **private**. Public conversion or an explicitly verified reviewer-access arrangement is still outstanding.
+- Reviewer accounts or usernames were not supplied, so reviewer permission and clone access cannot be verified here.
+- No claim is made about availability, interview scheduling, or reviewer access beyond the facts above.
