@@ -4,31 +4,39 @@
 {{ steps(1) }}
 <div class="hero-grid">
   <section class="hero-copy">
-    <p class="eyebrow">A little order. A lot more confidence.</p>
-    <h1>A cleaner list.<br><span>A clearer next step.</span></h1>
-    <p class="lead">Prepare your customer CSV for its next import. Spot gaps, choose your corrections, and review every change before downloading.</p>
-    <div class="principles"><span><b>01</b> Your original stays intact</span><span><b>02</b> Every change is your choice</span><span><b>03</b> Download what you preview</span></div>
+    <p class="section-label">Customer CSV workspace</p>
+    <h1>Make the next import easier to trust.</h1>
+    <p class="lead">Prepare a customer CSV with a clear record of what changed. Keep the original, choose the work, and review the exact file before it leaves this workspace.</p>
+    <ul class="assurance-list">
+      <li><strong>Original preserved</strong><span>Your uploaded bytes stay untouched.</span></li>
+      <li><strong>Changes chosen by you</strong><span>Nothing is inferred or silently normalized.</span></li>
+      <li><strong>Preview equals download</strong><span>The reviewed snapshot is the exported CSV.</span></li>
+    </ul>
   </section>
-  <section class="upload-card" aria-labelledby="upload-title">
-    <div class="card-topline"><span class="file-symbol" aria-hidden="true">CSV</span><span class="pill">One file. Four simple tools.</span></div>
-    <h2 id="upload-title">Start with your customer list</h2>
-    <p>Upload a CSV to see what needs attention.</p>
+  <section class="upload-panel" aria-labelledby="upload-title">
+    <div class="upload-panel-head"><span class="file-symbol" aria-hidden="true">CSV</span><span class="panel-note">One file at a time</span></div>
+    <p class="section-label">Step 1 · Upload</p>
+    <h2 id="upload-title">Start with your customer list.</h2>
+    <p class="upload-intro">We will show the original first, before any choices are applied.</p>
     <form method="post" action="{{ url_for('web.upload') }}" enctype="multipart/form-data">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <label class="file-label" for="file">Choose a CSV file</label>
-      <input id="file" name="file" type="file" accept=".csv,text/csv" required aria-describedby="file-help">
-      <p id="file-help" class="help">UTF-8 · Comma-separated · Header row<br>Up to 2 MiB, 10,000 records, and 50 columns</p>
-      <button class="button primary full" type="submit">Review my CSV <span aria-hidden="true">→</span></button>
+      <label class="file-picker" for="file">
+        <span class="file-picker-label">Choose a CSV file</span>
+        <span class="file-picker-detail">UTF-8, comma-separated, with a header row</span>
+        <input id="file" name="file" type="file" accept=".csv,text/csv" required aria-describedby="file-help">
+      </label>
+      <p id="file-help" class="help">Up to 2 MiB, 10,000 records, and 50 columns.</p>
+      <button class="button primary full" type="submit">Review my CSV</button>
     </form>
-    <div class="sample-link"><span>Just exploring?</span> <a href="{{ url_for('web.sample') }}">Download a fictional sample ↗</a></div>
-    {% if active_job %}<a class="resume" href="{{ url_for('web.configure') }}">Continue with your current upload →</a>{% endif %}
+    <div class="sample-link"><span>Just exploring?</span> <a href="{{ url_for('web.sample') }}">Download a fictional sample</a></div>
+    {% if active_job %}<a class="resume" href="{{ url_for('web.configure') }}">Continue with your current upload</a>{% endif %}
   </section>
 </div>
-<section class="feature-strip" aria-label="Available operations">
-  <div><span class="feature-icon" aria-hidden="true">↔</span><h3>Trim the edges</h3><p>Remove surrounding spaces in columns you choose.</p></div>
-  <div><span class="feature-icon" aria-hidden="true">∅</span><h3>Clear empty rows</h3><p>Remove records with nothing but blank cells.</p></div>
-  <div><span class="feature-icon" aria-hidden="true">＋</span><h3>Fill selected gaps</h3><p>Use your own replacement text. No guessing.</p></div>
-  <div><span class="feature-icon" aria-hidden="true">≡</span><h3>Keep one exact copy</h3><p>Remove exact duplicates while keeping the first.</p></div>
+<section class="capability-strip" aria-label="Available operations">
+  <div class="capability-item"><span class="capability-index">01</span><div><h3>Trim edges</h3><p>Remove surrounding spaces in selected columns.</p></div></div>
+  <div class="capability-item"><span class="capability-index">02</span><div><h3>Remove empty rows</h3><p>Clear records with nothing but blank cells.</p></div></div>
+  <div class="capability-item"><span class="capability-index">03</span><div><h3>Fill selected gaps</h3><p>Use your own replacement text, without guessing.</p></div></div>
+  <div class="capability-item"><span class="capability-index">04</span><div><h3>Keep one exact copy</h3><p>Remove duplicate rows while keeping the first.</p></div></div>
 </section>
 <p class="privacy-line">Temporary workspace: data expires after 30 minutes of inactivity and is cleared on reset or restart. No external services receive your CSV.</p>
 {% endblock %}

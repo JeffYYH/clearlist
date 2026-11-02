@@ -1,8 +1,12 @@
 {% macro steps(active) %}
-<nav class="steps" aria-label="Preparation steps">
-  {% for name in ['Upload', 'Review & choose', 'Preview & download'] %}
-  <span class="step {% if loop.index == active %}current{% elif loop.index < active %}complete{% endif %}"><span class="step-number">0{{ loop.index }}</span>{{ name }}</span>
+<nav class="workflow-nav" aria-label="Preparation steps">
+  <ol class="steps">
+  {% for name in ['Upload', 'Configure', 'Review & download'] %}
+  <li class="step {% if loop.index == active %}current{% elif loop.index < active %}complete{% endif %}"{% if loop.index == active %} aria-current="step"{% endif %}>
+    <span class="step-marker" aria-hidden="true">0{{ loop.index }}</span><span class="step-label">{{ name }}</span>
+  </li>
   {% endfor %}
+  </ol>
 </nav>
 {% endmacro %}
 
@@ -22,13 +26,13 @@
     {% if result_id %}
       {% set previous = dict(current_pages or {}, **{parameter: page.number - 1}) %}
       {% set following = dict(current_pages or {}, **{parameter: page.number + 1}) %}
-      {% if page.number > 1 %}<a href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **previous) }}">← Previous</a>{% endif %}
+        {% if page.number > 1 %}<a href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **previous) }}">Previous</a>{% endif %}
       <span>Page {{ page.number }} / {{ page.pages }}</span>
-      {% if page.number < page.pages %}<a href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **following) }}">Next →</a>{% endif %}
+        {% if page.number < page.pages %}<a href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **following) }}">Next</a>{% endif %}
     {% else %}
-      {% if page.number > 1 %}<a href="{{ url_for(endpoint, page=page.number-1, _anchor=anchor) }}">← Previous</a>{% endif %}
+        {% if page.number > 1 %}<a href="{{ url_for(endpoint, page=page.number-1, _anchor=anchor) }}">Previous</a>{% endif %}
       <span>Page {{ page.number }} / {{ page.pages }}</span>
-      {% if page.number < page.pages %}<a href="{{ url_for(endpoint, page=page.number+1, _anchor=anchor) }}">Next →</a>{% endif %}
+        {% if page.number < page.pages %}<a href="{{ url_for(endpoint, page=page.number+1, _anchor=anchor) }}">Next</a>{% endif %}
     {% endif %}
   </nav>
   {% endif %}
@@ -37,7 +41,7 @@
 
 {% macro warning(report) %}
 {% if report.formula_cells or report.formula_headers %}
-<aside class="notice warning"><strong>Check before opening in a spreadsheet.</strong> {{ report.formula_cells }} data cell(s) and {{ report.formula_headers }} header(s) have potential formula prefixes. Values are preserved for import, including “+” phone numbers. CSV quoting does not neutralize formulas.</aside>
+<aside class="notice warning"><span class="notice-mark" aria-hidden="true"></span><div><strong>Check before opening in a spreadsheet.</strong><span>{{ report.formula_cells }} data cell(s) and {{ report.formula_headers }} header(s) have potential formula prefixes. Values are preserved for import, including “+” phone numbers. CSV quoting does not neutralize formulas.</span></div></aside>
 {% endif %}
 {% endmacro %}
 

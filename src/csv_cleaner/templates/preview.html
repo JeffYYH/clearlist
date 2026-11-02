@@ -3,51 +3,51 @@
 {% block title %}Preview & download · Clearlist{% endblock %}
 {% block content %}
 {{ steps(3) }}
-<div class="page-heading"><div><p class="eyebrow">Your choices. One reviewable result.</p><h1>Here's what will change.</h1><p class="lead small">Review this snapshot, then download exactly what you see.</p></div><a class="button secondary" href="{{ url_for('web.configure') }}#choices">← Revise choices</a></div>
-<section class="stats" aria-label="Cleaning result summary">
-  <div><span class="stat-label">Records retained</span><strong>{{ result.after.rows }} <small>/ {{ result.before.rows }}</small></strong><span>Original order preserved</span></div>
-  <div><span class="stat-label">Rows removed</span><strong>{{ result.removed|length }}</strong><span>{{ summary.effects.empty_rows_removed }} empty · {{ summary.effects.duplicate_rows_removed }} duplicates</span></div>
-  <div><span class="stat-label">Cell operations</span><strong>{{ result.changes|length }}</strong><span>{{ summary.effects.cells_trimmed }} trims · {{ summary.effects.cells_filled }} fills</span></div>
-  <div><span class="stat-label">Missing cells</span><strong>{{ result.after.missing_by_column|sum }}</strong><span>{{ result.before.missing_by_column|sum }} before cleaning</span></div>
+<div class="page-heading"><div><p class="section-label">Step 3 · Review</p><h1>Review the prepared file.</h1><p class="lead small">Check this saved snapshot, then download exactly what you see.</p></div><a class="button secondary" href="{{ url_for('web.configure') }}#choices">Revise choices</a></div>
+<section class="facts" aria-label="Cleaning result summary">
+  <div class="fact"><span class="fact-label">Records retained</span><strong>{{ result.after.rows }} <small>/ {{ result.before.rows }}</small></strong><span class="fact-note">Original order preserved</span></div>
+  <div class="fact"><span class="fact-label">Rows removed</span><strong>{{ result.removed|length }}</strong><span class="fact-note">{{ summary.effects.empty_rows_removed }} empty · {{ summary.effects.duplicate_rows_removed }} duplicates</span></div>
+  <div class="fact"><span class="fact-label">Cell operations</span><strong>{{ result.changes|length }}</strong><span class="fact-note">{{ summary.effects.cells_trimmed }} trims · {{ summary.effects.cells_filled }} fills</span></div>
+  <div class="fact"><span class="fact-label">Missing cells</span><strong>{{ result.after.missing_by_column|sum }}</strong><span class="fact-note">{{ result.before.missing_by_column|sum }} before cleaning</span></div>
 </section>
-<div class="download-banner"><div><span class="eyebrow">Ready for your review</span><h2>Your preview is your download.</h2><p>Prepared for further import checks. Check the destination system's requirements.</p></div><div class="download-actions"><a class="button primary" href="{{ url_for('web.download', result_id=result.result_id, kind='cleaned.csv') }}">Download CSV ↓</a><a class="button secondary" href="{{ url_for('web.download', result_id=result.result_id, kind='summary.json') }}">Change summary ↓</a></div></div>
+<section class="download-panel" aria-labelledby="download-title"><div class="download-copy"><p class="section-label">Saved snapshot</p><h2 id="download-title">The preview is the download.</h2><p>Prepared for further import checks. Check the destination system's requirements.</p></div><div class="download-actions"><a class="button primary" href="{{ url_for('web.download', result_id=result.result_id, kind='cleaned.csv') }}">Download CSV</a><a class="button secondary" href="{{ url_for('web.download', result_id=result.result_id, kind='summary.json') }}">Download summary</a></div></section>
 <p class="help snapshot-id">Result ID: <code>{{ result.result_id }}</code> · A new preview replaces this snapshot and invalidates its links.</p>
 {{ warning(result.after) }}
 <details class="selected-tools"><summary>Selected tools and replacement text</summary>
   <ul><li><strong>Remove fully empty rows:</strong> {{ 'on' if result.options.remove_empty else 'off' }}</li>
   <li><strong>Trim columns:</strong> {{ summary.options.trim_columns|join(', ') if summary.options.trim_columns else 'none' }}</li>
-  <li><strong>Fill missing:</strong> {% for header, text in summary.options.fill_missing.items() %}{{ header }} → {{ literal(text) }}{% if not loop.last %}; {% endif %}{% else %}none{% endfor %}</li>
+  <li><strong>Fill missing:</strong> {% for header, text in summary.options.fill_missing.items() %}{{ header }} to {{ literal(text) }}{% if not loop.last %}; {% endif %}{% else %}none{% endfor %}</li>
   <li><strong>Remove exact duplicates:</strong> {{ 'on' if result.options.remove_duplicates else 'off' }}</li></ul>
 </details>
 <section class="panel" id="output">
-  <div class="section-heading"><div><p class="eyebrow">01 / Proposed output</p><h2>The list you'll download</h2></div><span class="pill">{{ result.after.rows }} records</span></div>
+  <div class="section-heading"><div><p class="section-label">Output table</p><h2>The list you'll download.</h2></div><span class="tag tag-positive">{{ result.after.rows }} records</span></div>
   <p class="help">Changed cells show the original above the proposed value. Source # is for review only and is never exported. <span class="empty-value">empty</span> and <span class="space-value">··</span> distinguish missing values.</p>
-  <div class="table-scroll" tabindex="0" role="region" aria-label="Proposed CSV output"><table class="data-table"><thead><tr><th scope="col">Source #</th>{% for header in result.dataset.headers %}<th scope="col">{{ header }}</th>{% endfor %}</tr></thead><tbody>
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Proposed CSV output"><table class="data-table"><caption class="visually-hidden">Proposed CSV output</caption><thead><tr><th scope="col">Source #</th>{% for header in result.dataset.headers %}<th scope="col">{{ header }}</th>{% endfor %}</tr></thead><tbody>
     {% for source, row in output['items'] %}<tr><th scope="row">{{ source }}</th>{% for cell in row %}{% set old = original.rows[source - 1][loop.index0] %}<td {% if old != cell %}class="changed-cell"{% endif %}>{% if old != cell %}<span class="change-label">Before</span>{{ literal(old) }}<span class="change-label">After</span>{{ literal(cell) }}{% else %}{{ value(cell) }}{% endif %}</td>{% endfor %}</tr>{% else %}<tr><td class="empty-state" colspan="{{ result.after.columns + 1 }}">No data records remain. Your download contains the original headers.</td></tr>{% endfor %}
   </tbody></table></div>
   {{ pagination(output, 'web.preview', 'output', result.result_id, current_pages={'changes_page': changes.number, 'removed_page': removed.number}) }}
 </section>
 <div class="details-grid">
 <section class="panel" id="changes">
-  <div class="section-heading"><div><p class="eyebrow">02 / Cell operations</p><h2>A closer look</h2></div><span class="pill neutral">{{ result.changes|length }} operations</span></div>
+  <div class="section-heading"><div><p class="section-label">Change log</p><h2>A closer look.</h2></div><span class="tag">{{ result.changes|length }} operations</span></div>
   <p class="help">Sequential effects: a cell can be trimmed and filled, and its row may be removed later. Quotes and escapes make whitespace visible.</p>
-  <div class="table-scroll" tabindex="0" role="region" aria-label="Cell operations"><table><thead><tr><th>Source #</th><th>Column / operation</th><th>Before → after</th></tr></thead><tbody>
-    {% for change in changes['items'] %}<tr><th scope="row">{{ change.source_row }}</th><td>{{ original.headers[change.column] }}<small class="muted block">{{ change.operation }}</small></td><td>{{ literal(change.before) }}<span class="arrow">→</span>{{ literal(change.after) }}</td></tr>{% else %}<tr><td colspan="3" class="empty-state">No cell values were changed.</td></tr>{% endfor %}
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Cell operations"><table><caption class="visually-hidden">Cell operations</caption><thead><tr><th>Source #</th><th>Column / operation</th><th>Before and after</th></tr></thead><tbody>
+    {% for change in changes['items'] %}<tr><th scope="row">{{ change.source_row }}</th><td>{{ original.headers[change.column] }}<small class="muted block">{{ change.operation }}</small></td><td><span class="change-value"><span class="change-label">Before</span>{{ literal(change.before) }}</span><span class="change-separator">then</span><span class="change-value"><span class="change-label">After</span>{{ literal(change.after) }}</span></td></tr>{% else %}<tr><td colspan="3" class="empty-state">No cell values were changed.</td></tr>{% endfor %}
   </tbody></table></div>
   {{ pagination(changes, 'web.preview', 'changes', result.result_id, 'changes_page', {'page': output.number, 'removed_page': removed.number}) }}
 </section>
 <section class="panel" id="removed">
-  <div class="section-heading"><div><p class="eyebrow">03 / Removed rows</p><h2>What was left out</h2></div><span class="pill neutral">{{ result.removed|length }} rows</span></div>
+  <div class="section-heading"><div><p class="section-label">Excluded rows</p><h2>What was left out.</h2></div><span class="tag">{{ result.removed|length }} rows</span></div>
   <p class="help">Duplicate matching uses all columns after the selected changes. The first occurrence is retained.</p>
-  <div class="table-scroll" tabindex="0" role="region" aria-label="Removed rows"><table><thead><tr><th>Source #</th><th>Reason</th></tr></thead><tbody>
-    {% for row in removed['items'] %}<tr><th scope="row">{{ row.source_row }}</th><td>{{ row.reason }}{% if row.kept_source_row %}<small class="muted block">Kept source #{{ row.kept_source_row }}</small>{% endif %}</td></tr>{% else %}<tr><td colspan="2" class="empty-state">Every original record was retained.</td></tr>{% endfor %}
+  <div class="table-scroll" tabindex="0" role="region" aria-label="Removed rows"><table><caption class="visually-hidden">Removed rows</caption><thead><tr><th>Source #</th><th>Reason</th></tr></thead><tbody>
+    {% for row in removed['items'] %}<tr class="removed-row"><th scope="row">{{ row.source_row }}</th><td>{{ row.reason }}{% if row.kept_source_row %}<small class="muted block">Kept source #{{ row.kept_source_row }}</small>{% endif %}</td></tr>{% else %}<tr><td colspan="2" class="empty-state">Every original record was retained.</td></tr>{% endfor %}
   </tbody></table></div>
   {{ pagination(removed, 'web.preview', 'removed', result.result_id, 'removed_page', {'page': output.number, 'changes_page': changes.number}) }}
 </section>
 </div>
 <section class="panel compact-panel">
-  <h2>Missing values, before and after</h2><div class="table-scroll" tabindex="0" role="region" aria-label="Missing values comparison"><table><thead><tr><th>Column</th><th>Before</th><th>After</th></tr></thead><tbody>{% for header in original.headers %}<tr><th scope="row">{{ header }}</th><td>{{ result.before.missing_by_column[loop.index0] }} / {{ result.before.rows }}</td><td>{{ result.after.missing_by_column[loop.index0] }} / {{ result.after.rows }}</td></tr>{% endfor %}</tbody></table></div>
-  <p class="help">Exact duplicate extras: {{ result.before.duplicate_rows }} before → {{ result.after.duplicate_rows }} after. Your original file remains intact. Output is UTF-8 CSV; quoting and record separators may differ.</p>
+  <div class="section-heading"><div><p class="section-label">Quality comparison</p><h2>Missing values, before and after.</h2></div></div><div class="table-scroll" tabindex="0" role="region" aria-label="Missing values comparison"><table><caption class="visually-hidden">Missing values before and after cleaning</caption><thead><tr><th>Column</th><th>Before</th><th>After</th></tr></thead><tbody>{% for header in original.headers %}<tr><th scope="row">{{ header }}</th><td>{{ result.before.missing_by_column[loop.index0] }} / {{ result.before.rows }}</td><td>{{ result.after.missing_by_column[loop.index0] }} / {{ result.after.rows }}</td></tr>{% endfor %}</tbody></table></div>
+  <p class="help">Exact duplicate extras: {{ result.before.duplicate_rows }} before, {{ result.after.duplicate_rows }} after. Your original file remains intact. Output is UTF-8 CSV; quoting and record separators may differ.</p>
 </section>
-<div class="bottom-actions"><a href="{{ url_for('web.configure') }}#choices">← Back to your choices</a>{{ reset_form() }}</div>
+<div class="bottom-actions"><a href="{{ url_for('web.configure') }}#choices">Back to your choices</a>{{ reset_form() }}</div>
 {% endblock %}
