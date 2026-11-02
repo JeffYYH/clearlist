@@ -40,7 +40,7 @@ Codex for planning and code generation; terminal tools for Python, pytest, Ruff,
 - Follow the README walkthrough yourself and inspect both downloads.
 - Review the code and explain the choices in your own words, especially preservation, transformation order, formula warnings, and session limitations.
 - Use the candidate-provided active-time estimate below; do not present agent elapsed time as human effort.
-- Make the repository publicly accessible before submission, or grant the named reviewers access and verify they can clone it. The current GitHub visibility remains private and reviewer identities/access are not supplied.
+- Make the repository publicly accessible before submission, or grant the named reviewers access and verify they can clone it. The candidate's follow-up request changed the repository to public; reviewer identities/access are still not supplied.
 - Report remote CI as passed only after observing a completed run.
 
 ## Subsequent implementation record
@@ -71,7 +71,7 @@ The earlier record above is preserved. The following entries extend it with the 
 - Current local baseline after the UI and documentation work: **83 pytest tests passed**, Ruff lint passed, Ruff format check passed, and `git diff --check` passed.
 - The focused template test checks Before/After labels, primary/secondary download links, removed-row reasons, table column scopes, and error recovery copy.
 - Actual browser inspection used the packaged fictional sample only. Desktop and narrow Preview screenshots were captured from Flask/Jinja output with the local stylesheet; the screenshot files in `docs/screenshots/` are not mockups. Browser checks covered changed cells, removed rows, warnings, downloads, keyboard focus progression, narrow table regions, and 500/768/1280/1440 layout width measurements.
-- A Docker daemon was unavailable during the latest documentation pass. The Docker commands and workflow remain documented and unchanged; no new Docker result is claimed here.
+- The first documentation pass ran while the Docker daemon was unavailable. A follow-up retry then built the test image and ran **83 passed** with Ruff checks; the runtime image started read-only and returned `{"status":"ok"}` from `/healthz`. Gunicorn emitted a non-fatal read-only home-directory control-server warning while the health check remained successful.
 
 ## Candidate-provided active-time estimate
 
@@ -89,6 +89,6 @@ Agent/tool elapsed time is kept separate. The historical session table contains 
 ## Submission details still requiring candidate action
 
 - The work-submission brief requires a repository accessible to reviewers. The candidate clarified that it should be public.
-- A GitHub repository metadata check on 2026-11-03 reported `JeffYYH/clearlist` visibility as **private**. Public conversion or an explicitly verified reviewer-access arrangement is still outstanding.
+- A GitHub repository metadata check initially reported `JeffYYH/clearlist` visibility as **private**. After the candidate's follow-up request, the GitHub API reported **public** and an unauthenticated HTTPS check returned HTTP 200. Reviewer identities/access were not supplied.
 - Reviewer accounts or usernames were not supplied, so reviewer permission and clone access cannot be verified here.
 - No claim is made about availability, interview scheduling, or reviewer access beyond the facts above.
