@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
 {% block title %}Check your upload · Clearlist{% endblock %}
 {% block content %}
-<section class="error-page"><p class="section-label">ClearList · Check upload</p><h1>We couldn't use this file yet.</h1><div role="alert" class="notice error"><span class="notice-mark" aria-hidden="true"></span><div><strong>Review this message</strong><span>{{ message }}</span></div></div><p>Your original file has not been changed.</p><div class="bottom-actions"><a href="{{ url_for('web.index') }}" class="button primary">Back to upload</a><a href="{{ url_for('web.configure') }}">Review current workspace</a></div></section>
+<section class="error-page"><p class="section-label">ClearList · Check upload</p><h1>We couldn't use this file yet.</h1><div role="alert" class="notice error"><span class="notice-mark" aria-hidden="true"></span><div><strong>Review this message</strong><span>{{ message }}</span></div></div><p>Your original file has not been changed. If this workspace expired, upload the file again to start a fresh review.</p><div class="bottom-actions"><a href="{{ url_for('web.index') }}" class="button primary">Back to upload</a><a href="{{ url_for('web.configure') }}">Review current workspace</a></div></section>
 {% endblock %}

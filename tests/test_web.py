@@ -80,6 +80,24 @@ def test_old_preview_invalidated_by_new_preview(client):
     assert b"001,Alex\r\n" in client.get(f"/download/{latest}/cleaned.csv").data
 
 
+def test_preview_and_error_templates_explain_review_states(client):
+    upload(client, b"name,note\n  Alex,same\nAlex,same\nkeep,third\n")
+    identity = result_id(preview(client, {"trim": "0", "remove_duplicates": "on"}))
+    page = client.get(f"/preview/{identity}")
+
+    assert page.status_code == 200
+    assert b"Before" in page.data and b"After" in page.data
+    assert b"Download CSV" in page.data and b"Download summary" in page.data
+    assert b"Removed" in page.data
+    assert b"Exact duplicate after selected operations" in page.data
+    assert b'scope="col"' in page.data
+
+    error = client.get("/missing")
+    assert b"We couldn't use this file yet." in error.data
+    assert b"Your original file has not been changed." in error.data
+    assert b"Back to upload" in error.data
+
+
 def test_preview_uses_one_job_snapshot_when_session_is_replaced(client, app, monkeypatch):
     upload(client, b"id,name\n1,old one\n2,old two\n")
     identity = result_id(preview(client))

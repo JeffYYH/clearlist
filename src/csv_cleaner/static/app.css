@@ -831,6 +831,7 @@ thead th {
   color: var(--muted);
   font-size: 10px;
   font-weight: 750;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
@@ -849,11 +850,16 @@ tbody tr:last-child > * {
 }
 
 .data-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
   min-width: 70px;
   background: var(--surface);
+  box-shadow: 1px 0 0 var(--rule);
 }
 
 .data-table thead th:first-child {
+  z-index: 3;
   background: #f0f2ed;
 }
 
@@ -1019,8 +1025,23 @@ input[type="checkbox"] {
   flex: 0 0 auto;
 }
 
+.download-primary {
+  min-height: 48px;
+  padding-right: 21px;
+  padding-left: 21px;
+  font-size: 13px;
+}
+
 .snapshot-id {
   overflow-wrap: anywhere;
+}
+
+.result-id {
+  display: inline-block;
+  padding: 1px 4px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--surface);
 }
 
 .changed-cell {
@@ -1053,6 +1074,13 @@ input[type="checkbox"] {
   white-space: pre-wrap;
 }
 
+.literal:focus-visible,
+.space-value:focus-visible,
+.result-id:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
 .details-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -1083,6 +1111,68 @@ input[type="checkbox"] {
 
 .removed-row th {
   border-left: 3px solid var(--oxide);
+}
+
+.reason-label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--oxide);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.empty-state strong,
+.empty-state span {
+  display: block;
+}
+
+.empty-state strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.empty-state span {
+  margin-top: 3px;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.pagination nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-link {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 4px 9px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--forest);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pagination-link:hover {
+  border-color: var(--forest);
+  background: var(--wash);
+  color: var(--forest-dark);
+}
+
+.pagination-current {
+  white-space: nowrap;
 }
 
 .compact-panel h2 {

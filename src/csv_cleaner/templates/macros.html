@@ -11,11 +11,11 @@
 {% endmacro %}
 
 {% macro value(text) %}
-{% if text == '' %}<span class="empty-value" aria-label="Empty cell">empty</span>{% elif is_missing(text) %}<span class="space-value" title="Whitespace only">{{ text|replace(' ', '·')|replace('\t', '⇥')|replace('\r', '␍')|replace('\n', '↵') }}</span>{% else %}<span class="cell-value">{{ text }}</span>{% endif %}
+{% if text == '' %}<span class="empty-value" aria-label="Empty cell">empty</span>{% elif is_missing(text) %}<span class="space-value" title="Whitespace only" tabindex="0">{{ text|replace(' ', '·')|replace('\t', '⇥')|replace('\r', '␍')|replace('\n', '↵') }}</span>{% else %}<span class="cell-value">{{ text }}</span>{% endif %}
 {% endmacro %}
 
 {% macro literal(text) %}
-<code class="literal">{{ text|tojson }}</code>
+<code class="literal" tabindex="0">{{ text|tojson }}</code>
 {% endmacro %}
 
 {% macro pagination(page, endpoint, anchor='', result_id=none, parameter='page', current_pages=none) %}
@@ -26,13 +26,13 @@
     {% if result_id %}
       {% set previous = dict(current_pages or {}, **{parameter: page.number - 1}) %}
       {% set following = dict(current_pages or {}, **{parameter: page.number + 1}) %}
-        {% if page.number > 1 %}<a href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **previous) }}">Previous</a>{% endif %}
-      <span>Page {{ page.number }} / {{ page.pages }}</span>
-        {% if page.number < page.pages %}<a href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **following) }}">Next</a>{% endif %}
+        {% if page.number > 1 %}<a class="pagination-link" href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **previous) }}">Previous</a>{% endif %}
+      <span class="pagination-current">Page {{ page.number }} / {{ page.pages }}</span>
+        {% if page.number < page.pages %}<a class="pagination-link" href="{{ url_for(endpoint, result_id=result_id, _anchor=anchor, **following) }}">Next</a>{% endif %}
     {% else %}
-        {% if page.number > 1 %}<a href="{{ url_for(endpoint, page=page.number-1, _anchor=anchor) }}">Previous</a>{% endif %}
-      <span>Page {{ page.number }} / {{ page.pages }}</span>
-        {% if page.number < page.pages %}<a href="{{ url_for(endpoint, page=page.number+1, _anchor=anchor) }}">Next</a>{% endif %}
+        {% if page.number > 1 %}<a class="pagination-link" href="{{ url_for(endpoint, page=page.number-1, _anchor=anchor) }}">Previous</a>{% endif %}
+      <span class="pagination-current">Page {{ page.number }} / {{ page.pages }}</span>
+        {% if page.number < page.pages %}<a class="pagination-link" href="{{ url_for(endpoint, page=page.number+1, _anchor=anchor) }}">Next</a>{% endif %}
     {% endif %}
   </nav>
   {% endif %}
