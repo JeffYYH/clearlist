@@ -6,7 +6,11 @@ import json
 import pytest
 
 from csv_cleaner.engine import (
+    MAX_CELL_CHARS,
+    MAX_COLUMNS,
     MAX_INPUT_BYTES,
+    MAX_OUTPUT_BYTES,
+    MAX_REPLACEMENT_CHARS,
     MAX_ROWS,
     CleaningOptions,
     DataError,
@@ -15,6 +19,34 @@ from csv_cleaner.engine import (
     formula_like,
     parse_csv,
 )
+
+
+def serialized_header(headers):
+    buffer = io.StringIO(newline="")
+    csv.writer(buffer, lineterminator="\r\n").writerow(headers)
+    return buffer.getvalue().encode("utf-8")
+
+
+def output_boundary_case():
+    headers = [f"column_{index}" for index in range(MAX_COLUMNS)]
+    for suffix in range(10_000):
+        candidate_headers = [*headers[:-1], headers[-1] + ("h" * suffix)]
+        header_bytes = serialized_header(candidate_headers)
+        remaining = MAX_OUTPUT_BYTES - len(header_bytes)
+        if remaining % MAX_ROWS:
+            continue
+        row_size = remaining // MAX_ROWS
+        replacement_chars = row_size - (MAX_COLUMNS + 1)
+        if not 0 < replacement_chars <= MAX_COLUMNS * MAX_REPLACEMENT_CHARS:
+            continue
+        quotient, remainder = divmod(replacement_chars, MAX_COLUMNS)
+        lengths = [quotient + (index < remainder) for index in range(MAX_COLUMNS)]
+        if min(lengths) == 0 or max(lengths) > MAX_REPLACEMENT_CHARS:
+            continue
+        source = header_bytes + (b"," * (MAX_COLUMNS - 1) + b"\n") * MAX_ROWS
+        replacements = tuple((index, "x" * length) for index, length in enumerate(lengths))
+        return parse_csv(source), CleaningOptions(replacements=replacements)
+    raise AssertionError("could not construct an exact output-limit dataset")
 
 
 def test_sample_has_independently_counted_issues(sample_bytes):
@@ -71,6 +103,61 @@ def test_no_operations_preserve_values_and_order():
     assert not result.changes and not result.removed
     assert not result.csv_bytes.startswith(b"\xef\xbb\xbf")
     assert result.csv_bytes.startswith(b" ID ,name,token,phone,note\r\n")
+
+
+def test_no_op_cleaning_round_trips_headers_values_and_order():
+    content = (
+        'id,name,note\n001,陳美玲,"first line, then ""quoted"" text"\n'
+        '002,Alex,"second line\nwith an embedded newline"\n'
+    ).encode()
+    source = parse_csv(content)
+    result = clean(source, CleaningOptions())
+    reparsed = parse_csv(result.csv_bytes, generated=True)
+
+    assert reparsed.headers == source.headers
+    assert reparsed.rows == source.rows
+    assert result.dataset.headers == source.headers
+    assert result.dataset.rows == source.rows
+    assert result.source_rows == (1, 2)
+
+
+def test_utf8_bom_and_non_ascii_values_are_preserved():
+    content = "\ufeff識別子,姓名,備註\n001,陳美玲,保留🙂\n".encode()
+    dataset = parse_csv(content)
+
+    assert dataset.headers == ("識別子", "姓名", "備註")
+    assert dataset.rows == (("001", "陳美玲", "保留🙂"),)
+    assert dataset.original_bytes == content
+
+
+@pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
+def test_quoted_fields_escaped_quotes_and_line_endings_round_trip(line_ending):
+    content = (
+        f"identifier,name,note{line_ending}"
+        f'001,"A, B","say ""hello""{line_ending}next"{line_ending}'
+        f'002,普通話,"kept, exactly"{line_ending}'
+    ).encode()
+    source = parse_csv(content)
+    result = clean(source, CleaningOptions())
+
+    assert source.rows == (
+        ("001", "A, B", f'say "hello"{line_ending}next'),
+        ("002", "普通話", "kept, exactly"),
+    )
+    assert parse_csv(result.csv_bytes, generated=True).rows == source.rows
+    assert b"\r\n" in result.csv_bytes
+
+
+def test_strict_quote_policy_accepts_escaped_quotes_only_inside_quoted_fields():
+    accepted = parse_csv(b'a\n"say ""hello"""\n')
+    assert accepted.rows == (('say "hello"',),)
+    for invalid in (
+        b'a\nplain"quote\n',
+        b'a\n"closed"suffix\n',
+        b'a\n"unclosed\n',
+    ):
+        with pytest.raises(DataError, match="Malformed quoting"):
+            parse_csv(invalid)
 
 
 def test_whitespace_classification_does_not_modify_values():
@@ -172,6 +259,64 @@ def test_rejects_invalid_input(content):
 def test_input_boundaries(content):
     with pytest.raises(DataError):
         parse_csv(content)
+
+
+def test_exact_input_limit_is_accepted_and_one_byte_over_is_rejected():
+    header = b"a\n"
+    regular_row = b"x" * 208 + b"\n"
+    body = regular_row * (MAX_ROWS - 1)
+    remaining = MAX_INPUT_BYTES - len(header) - len(body)
+    content = header + body + (b"x" * (remaining - 1)) + b"\n"
+
+    assert len(content) == MAX_INPUT_BYTES
+    dataset = parse_csv(content)
+    assert len(dataset.rows) == MAX_ROWS
+    assert dataset.rows[0] == ("x" * 208,)
+    assert dataset.rows[-1] == ("x" * (remaining - 1),)
+    with pytest.raises(DataError, match="file exceeds"):
+        parse_csv(content + b"x")
+
+
+def test_maximum_columns_are_accepted_and_one_more_is_rejected():
+    headers = [f"column_{index}" for index in range(MAX_COLUMNS)]
+    values = [f"value_{index}" for index in range(MAX_COLUMNS)]
+    accepted = (",".join(headers) + "\n" + ",".join(values) + "\n").encode()
+
+    dataset = parse_csv(accepted)
+    assert len(dataset.headers) == MAX_COLUMNS
+    assert dataset.rows == (tuple(values),)
+
+    too_many_headers = headers + ["extra"]
+    too_many_values = values + ["extra"]
+    rejected = (",".join(too_many_headers) + "\n" + ",".join(too_many_values) + "\n").encode()
+    with pytest.raises(DataError, match="at most 50 columns"):
+        parse_csv(rejected)
+
+
+def test_maximum_cell_length_is_accepted_and_one_more_is_rejected():
+    accepted = (("h" * MAX_CELL_CHARS) + "\n" + ("v" * MAX_CELL_CHARS) + "\n").encode()
+    dataset = parse_csv(accepted)
+    assert len(dataset.headers[0]) == MAX_CELL_CHARS
+    assert len(dataset.rows[0][0]) == MAX_CELL_CHARS
+
+    too_long_value = ("h\n" + ("v" * (MAX_CELL_CHARS + 1)) + "\n").encode()
+    with pytest.raises(DataError, match="field longer"):
+        parse_csv(too_long_value)
+
+
+def test_exact_output_limit_is_accepted_and_one_replacement_byte_over_is_rejected():
+    source, options = output_boundary_case()
+    result = clean(source, options)
+
+    assert len(result.csv_bytes) == MAX_OUTPUT_BYTES
+    assert result.dataset.rows == tuple(
+        tuple(value for _, value in options.replacements) for _ in range(MAX_ROWS)
+    )
+    oversized_replacements = (
+        (index, value + "x" if index == 0 else value) for index, value in options.replacements
+    )
+    with pytest.raises(DataError, match="output exceeds"):
+        clean(source, CleaningOptions(replacements=tuple(oversized_replacements)))
 
 
 @pytest.mark.parametrize(
