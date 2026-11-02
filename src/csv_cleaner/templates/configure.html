@@ -15,6 +15,7 @@
 <section class="panel" id="original">
   <div class="section-heading"><div><p class="section-label">Source table</p><h2>Original data</h2></div><span class="tag">Original preserved</span></div>
   <p class="help">Source # counts data records, not file lines. <span class="empty-value">empty</span> = no text; <span class="space-value">··</span> = whitespace only. All records are available through pagination.</p>
+  <p class="table-note">Scroll inside this frame to view all columns.</p>
   <div class="table-scroll" tabindex="0" role="region" aria-label="Original CSV data"><table class="data-table"><caption class="visually-hidden">Original CSV data</caption><thead><tr><th scope="col">Source #</th>{% for header in dataset.headers %}<th scope="col">{{ header }}</th>{% endfor %}</tr></thead><tbody>
     {% for source, row in original['items'] %}<tr><th scope="row">{{ source }}</th>{% for cell in row %}<td>{{ value(cell) }}</td>{% endfor %}</tr>{% else %}<tr><td colspan="{{ report.columns + 1 }}" class="empty-state">This file has headers and no data records.</td></tr>{% endfor %}
   </tbody></table></div>
@@ -29,6 +30,7 @@
       <label class="operation"><input name="remove_empty" type="checkbox" {% if remove_empty %}checked{% endif %}><span><strong>Remove fully empty rows</strong><small>Applied first, before replacements can create artificial records.</small></span></label>
       <label class="operation"><input name="remove_duplicates" type="checkbox" {% if remove_duplicates %}checked{% endif %}><span><strong>Remove exact duplicates</strong><small>Applied last, across all columns. The first occurrence stays.</small></span></label>
     </div>
+    <p class="table-note">Scroll inside this frame to view all columns.</p>
     <div class="table-scroll" tabindex="0" role="region" aria-label="Column quality and cleaning choices"><table class="choices-table"><caption class="visually-hidden">Column quality and cleaning choices</caption><thead><tr><th scope="col">Column</th><th scope="col">Missing</th><th scope="col">Trim edges</th><th scope="col">Fill missing</th><th scope="col">Your replacement</th></tr></thead><tbody>
       {% for header in dataset.headers %}{% set i = loop.index0|string %}<tr>
       <th scope="row">{{ header }}</th><td>{{ report.missing_by_column[loop.index0] }} <span class="muted">/ {{ report.rows }} · {{ '%.1f'|format(report.missing_by_column[loop.index0] * 100 / report.rows if report.rows else 0) }}%</span></td>

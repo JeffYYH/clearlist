@@ -17,6 +17,7 @@
   --radius-control: 6px;
   --radius-surface: 10px;
   --content-width: 1180px;
+  --focus-ring: 3px solid var(--oxide);
   --shadow-file: 0 18px 44px rgb(32 40 32 / 7%);
 }
 
@@ -35,6 +36,13 @@ body {
   font-family: Inter, "Avenir Next", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--forest);
+  color: #fff;
 }
 
 a {
@@ -62,12 +70,13 @@ button:focus-visible,
 input:focus-visible,
 [tabindex]:focus-visible,
 summary:focus-visible {
-  outline: 3px solid var(--oxide);
+  outline: var(--focus-ring);
   outline-offset: 3px;
 }
 
 .wrap {
   max-width: var(--content-width);
+  min-width: 0;
   margin: 0 auto;
   padding-right: 32px;
   padding-left: 32px;
@@ -75,6 +84,7 @@ summary:focus-visible {
 
 .site-header {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   min-height: 92px;
@@ -83,6 +93,7 @@ summary:focus-visible {
 
 .brand {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: 11px;
   color: var(--ink);
@@ -138,6 +149,7 @@ summary:focus-visible {
 
 .header-note {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   gap: 8px;
   color: var(--muted);
@@ -157,6 +169,8 @@ summary:focus-visible {
 
 .steps {
   display: flex;
+  width: 100%;
+  min-width: 0;
   max-width: 720px;
   align-items: center;
   gap: 0;
@@ -171,6 +185,7 @@ summary:focus-visible {
   position: relative;
   display: flex;
   flex: 1;
+  min-width: 0;
   align-items: center;
   gap: 9px;
 }
@@ -219,6 +234,7 @@ summary:focus-visible {
 }
 
 .step-label {
+  min-width: 0;
   white-space: nowrap;
 }
 
@@ -281,6 +297,7 @@ h3 {
 
 .hero-grid {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(0, 1.05fr) minmax(360px, .8fr);
   gap: clamp(48px, 8vw, 112px);
   align-items: center;
@@ -289,6 +306,7 @@ h3 {
 
 .hero-copy {
   position: relative;
+  min-width: 0;
   padding-left: 22px;
 }
 
@@ -338,6 +356,7 @@ h3 {
 }
 
 .upload-panel {
+  min-width: 0;
   padding: 30px;
   background: var(--surface);
   border: 1px solid var(--rule);
@@ -393,6 +412,12 @@ h3 {
   background: var(--wash);
 }
 
+.file-picker:focus-within {
+  border-color: var(--oxide);
+  outline: var(--focus-ring);
+  outline-offset: 3px;
+}
+
 .file-picker-label {
   display: block;
   margin-bottom: 4px;
@@ -410,7 +435,9 @@ h3 {
 
 input[type="file"] {
   display: block;
+  min-width: 0;
   width: 100%;
+  max-width: 100%;
   color: var(--muted);
   font-size: 11px;
 }
@@ -767,6 +794,14 @@ input[type="file"]::file-selector-button:hover {
   border: 1px solid var(--rule);
   border-radius: var(--radius-control);
   overscroll-behavior-x: contain;
+  scrollbar-color: #aab9ad var(--canvas);
+}
+
+.table-note {
+  display: none;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 10px;
 }
 
 table {
@@ -878,6 +913,10 @@ tbody tr:last-child > * {
   color: #849087;
 }
 
+.choices-table input[type="text"]:hover {
+  border-color: var(--forest);
+}
+
 input[type="checkbox"] {
   width: 17px;
   height: 17px;
@@ -907,6 +946,12 @@ input[type="checkbox"] {
 .operation:hover {
   border-color: #9fb1a3;
   background: var(--wash);
+}
+
+.operation:focus-within {
+  border-color: var(--oxide);
+  outline: var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .operation strong {
@@ -1148,7 +1193,10 @@ code {
   }
 
   .header-note {
+    max-width: 118px;
     font-size: 10px;
+    line-height: 1.25;
+    text-align: right;
   }
 
   .workflow-nav {
@@ -1294,6 +1342,10 @@ code {
 
   .table-scroll {
     max-width: calc(100vw - 32px);
+  }
+
+  .table-note {
+    display: block;
   }
 
   .data-table td {
